@@ -1,62 +1,60 @@
-from turtle import *
-from random import randint
 from time import sleep
 
-w = 200
-h = 200
-margin = 30
+class Hero():
+    def __init__(self, name, health, armor, power, weapon):
+        self.name = name
+        self.health = health
+        self.armor = armor
+        self.power = power
+        self.weapon = weapon
 
-t1 = Turtle()
-t1.shape('turtle')
-t1.color('red')
-t1.speed(15)
-t1.points = 0
-t1.penup()
+    def print_info(self):
+        print('->', self.name)
+        print('Уровень здоровья:', self.health)
+        print('Класс брони:', self.armor)
+        print('Сила удара:', self.power)
+        print('Оружие:', self.weapon)
+        print()
 
-t2 = Turtle()
-t2.shape('turtle')
-t2.color('blue')
-t2.speed(10)
-t2.points = 0
-t2.penup()
+    def strike(self, enemy):
+        print(
+            '-> УДАР! ' + self.name + ' атакует ' + enemy.name +
+            ' с силой ' + str(self.power) + ', используя ' + self.weapon + '\n')
 
+        enemy.armor -= self.power
+        if enemy.armor < 0:
+            enemy.health += enemy.armor
+            enemy.armor = 0
 
-def rand_move(t):
-    x = randint(-w + margin, w -margin)
-    y = randint(-h + margin, h - margin)
-    t.goto(x, y)
+        print(enemy.name + ' покачнулся.')
+        print('Класс его брони упал до', enemy.armor) 
+        print('Уровень здоровья упал до', enemy.health)
+        print()
+        
+print('Средиземье в опасности! На помощь спешит доблестный рыцарь...')
+sleep(2)
 
-def catch1(x, y):
-    t1.points += 1
-    t1.write('A!', font=("Arial", 14, 'normal'))
-    print('Очки красной черепашки:', t1.points)
+knight = Hero('Ричард', 50, 25, 20, 'меч')
+knight.print_info()
 
-    if t1.points >= 3:
-        t1.hideturtle()
-        t1.goto(0, 20)
-        t1.write('WOW!', align='center', font=("Arial", 14, 'bold'))
+sleep(2)
 
-def catch2(x, y):
-    t2.points += 1
-    t2.write('A!', font=("Arial", 14, 'normal'))
-    print('Очки синей черепашки:', t2.points)
+print('Вдруг из кустов появляется разбойница!')
+sleep(2)
 
-    if t2.points >= 3:
-        t2.hideturtle()
-        t2.goto(0, -20)
-        t2.write('WOW!',  align='center', font=("Arial", 14, 'bold'))
+rascal = Hero('Хелен', 20, 5, 5, 'лук')
+rascal.print_info()
 
-t1.onclick(catch1)
-t2.onclick(catch2)
+sleep(2)
+print('ДА НАЧНЁТСЯ БИТВА!\n')
+sleep(2)
 
-while t1.points < 3 or t2.points < 3:
-    if t1.points < 3:
-        rand_move(t1)
-    
-    if t2.points < 3:
-        rand_move(t2)
+knight.strike(rascal)
+sleep(2)
 
-    sleep(1)
+knight.strike(rascal)
 
-print("Игра окончена!")    
-exitonclick()
+if rascal.health <= 0:
+    print(rascal.name + ' пала в этом нелёгком бою!')
+
+        
