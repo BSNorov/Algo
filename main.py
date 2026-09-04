@@ -1,58 +1,134 @@
+import os
+from sys import path
+
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QVBoxLayout, \
-    QGroupBox, QRadioButton, QPushButton, QLabel
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QLabel, QPushButton, QListWidget, QVBoxLayout, QHBoxLayout
+
+from PIL import Image
+from PIL.ImageFilter import SHARPEN
 
 app = QApplication([])
+win = QWidget()
+win.resize(700, 500)
+win.setWindowTitle('Easy Editor')
 
-window = QWidget()
-window.setWindowTitle("Memory Card")
-window.resize(400, 300)
+lb_image = QLabel('Картинка')
+btn_dir = QPushButton('Папка')
+lw_files = QListWidget()
 
-btn_OK = QPushButton("Ответить")
-lb_Question = QLabel("Какой национальности не существует?")
+btn_left = QPushButton('Лево')
+btn_right = QPushButton('Право')
+btn_flip = QPushButton('Зеркало')
+btn_sharp = QPushButton('Резкость')
+btn_bw = QPushButton('Ч/Б')
+btn_reset = QPushButton('Сброс фильтров')
 
-RadioGroupBox = QGroupBox("Варианты ответов")
-rbtn_1 = QRadioButton('Энцы')
-rbtn_2 = QRadioButton('Смурфы')
-rbtn_3 = QRadioButton('Чулемцы')
-rbtn_4 = QRadioButton('Алеуты')
+row = QHBoxLayout()
+col1 = QVBoxLayout()
+col2 = QVBoxLayout()
 
+col1.addWidget(btn_dir)
+col1.addWidget(lw_files)
+col2.addWidget(lb_image, 95)
 
-layout_ans1 = QHBoxLayout()
-layout_ans2 = QVBoxLayout()
-layout_ans3 = QVBoxLayout()
-layout_ans2.addWidget(rbtn_1)
-layout_ans2.addWidget(rbtn_2)
-layout_ans3.addWidget(rbtn_3)
-layout_ans3.addWidget(rbtn_4)
+row_tools = QHBoxLayout()
+row_tools.addWidget(btn_left)
+row_tools.addWidget(btn_right)
+row_tools.addWidget(btn_flip)
+row_tools.addWidget(btn_sharp)
+row_tools.addWidget(btn_bw)
+row_tools.addWidget(btn_reset)
+col2.addLayout(row_tools)
 
-layout_ans1.addLayout(layout_ans2)
-layout_ans1.addLayout(layout_ans3)
+row.addLayout(col1, 20)
+row.addLayout(col2, 80)
+win.setLayout(row)
+win.show()
 
-RadioGroupBox.setLayout(layout_ans1)
+workdir = ''
 
-layout_line1 = QHBoxLayout()
-layout_line2 = QHBoxLayout()
-layout_line3 = QHBoxLayout()
+def filter(files, extensions):
+    result = []
+    for filename in files:
+        for ext in extensions:
+            if filename.endswith(ext):
+                result.append(filename)
 
-layout_line1.addWidget(lb_Question, alignment=(Qt.AlignHCenter | Qt.AlignVCenter))
-layout_line2.addWidget(RadioGroupBox)
+    return result
 
+def chooseWorkdir():
+    global workdir
+    workdir = QFileDialog.getExistingDirectory()
 
-layout_line3.addStretch(1)
-layout_line3.addWidget(btn_OK, stretch=2)
-layout_line3.addStretch(1)
+def showFilenamesList():
+    extension = ['.jpg', '.jpeg', '.png', '.gif', '.bmp']
+    chooseWorkdir()
+    filenames = filter(os.listdir(workdir), extension)
 
-layout_card = QVBoxLayout()
+    lw_files.clear()
+    for filename in filenames:
+        lw_files.addItem(filename)
 
-layout_card.addLayout(layout_line1, stretch=2)
-layout_card.addLayout(layout_line2, stretch=8)
-layout_card.addStretch(1)
-layout_card.addLayout(layout_line3, stretch=1)
-layout_card.addStretch(1)
-layout_card.setSpacing(5)
-window.setLayout(layout_card)
+btn_dir.clicked.connect(showFilenamesList)
 
+class ImageProcessor():
+    def __init__(self):
+        self.image = None
+        self.dir = None
+        self.filename = None
+        self.save_dir = "Modified/"
+        self.original_image = None
 
-window.show()
-app.exec()
+    def loadImage(self, filename):
+        self.filename = filename
+        fullname = os.path.join(workdir, filename)
+        self.image = Image.open(fullname)
+        self.original_image = self.image.copy()
+
+    def saveImage(self):
+        path = os.path.join(workdir, self.save_dir)
+        if not os.path.exists(path) or not os.path.isdir(path):
+            os.mkdir(path)
+        fullname = os.path.join(workdir, self.filename)
+
+        self.image.save(fullname)
+
+    def do_bw(self):
+        self.image = self.image.convert('L')
+        self.saveImage()
+        image_path = os.path.join(workdir, self.save_dir, self.filename)
+        self.showImage(image_path)
+
+    def showImage(self, path):
+        lb_image.hide()
+        pixmapimage = QPixmap(path)
+        w, h = lb_image.width(), lb_image.height()
+        pixmapimage = pixmapimage.scaled(w, h, Qt.KeepAspectRatio)
+        lb_image.setPixmap(pixmapimage)
+        lb_image.show()
+
+    def resetImage(self):
+        if self.original_image is None:
+            return
+
+        self.image = self.original_image.copy()
+        self.showImage(os.path.join(workdir, self.filename))
+
+    def showChosenImage(self):
+        if lw_files.currentRow() >= 0:
+            filename = lw_files.currentItem().text()
+            workimage.loadImage(filename)
+            workimage.showImage(os.path.join(workdir, workimage.filename))
+
+workimage = ImageProcessor()
+lw_files.currentRowChanged.connect(showChosenImage)
+
+btn_bw.clicked.connect(workimage.do_bw)
+btn_left.clicked.connect(workimage.do_left)
+btn_right.clicked.connect(workimage.do_right)
+btn_sharp.clicked.connect(workimage.do_sharpen)
+btn_flip.clicked.connect(workimage.do_flip)
+btn_reset.clicked.connect(workimage.resetImage)
+
+app.exec_()
