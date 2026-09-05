@@ -1,134 +1,150 @@
-import os
-from sys import path
-
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QLabel, QPushButton, QListWidget, QVBoxLayout, QHBoxLayout
+from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QVBoxLayout, \
+    QGroupBox, QButtonGroup, QRadioButton, QPushButton, QLabel
+from random import randint, shuffle
 
-from PIL import Image
-from PIL.ImageFilter import SHARPEN
+class Question:
+    def __init__(self, question, right_answer, wrong1, wrong2, wrong3):
+        self.question = question
+        self.right_answer = right_answer
+        self.wrong1 = wrong1
+        self.wrong2 = wrong2
+        self.wrong3 = wrong3
+
+questions_list = []
+questions_list.append(
+    Question("Государственный язык Бразилии", "Португальский", 'Английский', 'Испанский', 'Бразильский'))
+questions_list.append(
+    Question('Какого цвета нет на флаге России?', 'Зеленый', 'Красный', 'Белый', 'Синий'))
+questions_list.append(
+    Question('Национальная хижина якутов', 'Ураса', 'Юрта', 'Иглу', 'Хата'))
 
 app = QApplication([])
-win = QWidget()
-win.resize(700, 500)
-win.setWindowTitle('Easy Editor')
 
-lb_image = QLabel('Картинка')
-btn_dir = QPushButton('Папка')
-lw_files = QListWidget()
+btn_OK = QPushButton('Ответить')
+lb_Question = QLabel('Самый сложный вопрос в мире!')
 
-btn_left = QPushButton('Лево')
-btn_right = QPushButton('Право')
-btn_flip = QPushButton('Зеркало')
-btn_sharp = QPushButton('Резкость')
-btn_bw = QPushButton('Ч/Б')
-btn_reset = QPushButton('Сброс фильтров')
+RadioGroupBox = QGroupBox('Варианты ответов')
 
-row = QHBoxLayout()
-col1 = QVBoxLayout()
-col2 = QVBoxLayout()
+rbtn_1 = QRadioButton('Вариант 1')
+rbtn_2 = QRadioButton('Вариант 2')
+rbtn_3 = QRadioButton('Вариант 3')
+rbtn_4 = QRadioButton('Вариант 4')
 
-col1.addWidget(btn_dir)
-col1.addWidget(lw_files)
-col2.addWidget(lb_image, 95)
+RadioGroup = QButtonGroup()
+RadioGroup.addButton(rbtn_1)
+RadioGroup.addButton(rbtn_2)
+RadioGroup.addButton(rbtn_3)
+RadioGroup.addButton(rbtn_4)
 
-row_tools = QHBoxLayout()
-row_tools.addWidget(btn_left)
-row_tools.addWidget(btn_right)
-row_tools.addWidget(btn_flip)
-row_tools.addWidget(btn_sharp)
-row_tools.addWidget(btn_bw)
-row_tools.addWidget(btn_reset)
-col2.addLayout(row_tools)
+layout_ans1 = QHBoxLayout()
+layout_ans2 = QVBoxLayout()
+layout_ans3 = QVBoxLayout()
+layout_ans2.addWidget(rbtn_1)
+layout_ans2.addWidget(rbtn_2)
+layout_ans3.addWidget(rbtn_3)
+layout_ans3.addWidget(rbtn_4)
 
-row.addLayout(col1, 20)
-row.addLayout(col2, 80)
-win.setLayout(row)
-win.show()
+layout_ans1.addLayout(layout_ans2)
+layout_ans1.addLayout(layout_ans3)
 
-workdir = ''
+AnsGroupBox = QGroupBox('Результат теста')
+lb_Result = QLabel('прав ты или нет?')
+lb_Correct = QLabel('ответ будет тут!')
 
-def filter(files, extensions):
-    result = []
-    for filename in files:
-        for ext in extensions:
-            if filename.endswith(ext):
-                result.append(filename)
+layout_res = QVBoxLayout()
+layout_res.addWidget(lb_Result, alignment=(Qt.AlignLeft | Qt.AlignTop))
+layout_res.addWidget(lb_Correct, alignment=Qt.AlignHCenter, stretch=2)
 
-    return result
+AnsGroupBox.setLayout(layout_res)
+layout_line1 = QHBoxLayout()
+layout_line2 = QHBoxLayout()
+layout_line3 = QHBoxLayout()
 
-def chooseWorkdir():
-    global workdir
-    workdir = QFileDialog.getExistingDirectory()
+layout_line1.addWidget(lb_Question, alignment=(Qt.AlignHCenter | Qt.AlignVCenter))
+layout_line2.addWidget(RadioGroupBox)
+layout_line3.addWidget(AnsGroupBox)
+AnsGroupBox.hide()
 
-def showFilenamesList():
-    extension = ['.jpg', '.jpeg', '.png', '.gif', '.bmp']
-    chooseWorkdir()
-    filenames = filter(os.listdir(workdir), extension)
+layout_line3.addStretch(1)
+layout_line3.addWidget(btn_OK, stretch=2)
+layout_line3.addStretch(1)
 
-    lw_files.clear()
-    for filename in filenames:
-        lw_files.addItem(filename)
+layout_card = QVBoxLayout()
+layout_card.addLayout(layout_line1, stretch=2)
+layout_card.addLayout(layout_line2, stretch=8)
+layout_card.addStretch(1)
+layout_card.addLayout(layout_line3, stretch=1)
+layout_card.addStretch(1)
+layout_card.setSpacing(5)
 
-btn_dir.clicked.connect(showFilenamesList)
+def show_result():
+    RadioGroupBox.hide()
+    AnsGroupBox.show()
+    btn_OK.setText('Следующий вопрос')
 
-class ImageProcessor():
-    def __init__(self):
-        self.image = None
-        self.dir = None
-        self.filename = None
-        self.save_dir = "Modified/"
-        self.original_image = None
+def show_question():
+    RadioGroupBox.show()
+    AnsGroupBox.hide()
+    btn_OK.setText('Ответить')
+    RadioGroup.setExclusive(False)
+    rbtn_1.setChecked(False)
+    rbtn_2.setChecked(False)
+    rbtn_3.setChecked(False)
+    rbtn_4.setChecked(False)
+    RadioGroup.setExclusive(True)
 
-    def loadImage(self, filename):
-        self.filename = filename
-        fullname = os.path.join(workdir, filename)
-        self.image = Image.open(fullname)
-        self.original_image = self.image.copy()
+answers = [rbtn_1, rbtn_2, rbtn_3, rbtn_4]
 
-    def saveImage(self):
-        path = os.path.join(workdir, self.save_dir)
-        if not os.path.exists(path) or not os.path.isdir(path):
-            os.mkdir(path)
-        fullname = os.path.join(workdir, self.filename)
+def ask(q: Question):
+    shuffle(answers)
+    answers[0].setText(q.right_answer)
+    answers[1].setText(q.wrong1)
+    answers[2].setText(q.wrong2)
+    answers[3].setText(q.wrong3)
+    lb_Question.setText(q.question)
+    lb_Correct.setText(q.right_answer)
+    show_question()
 
-        self.image.save(fullname)
+def show_correct(res):
+    lb_Result.setText(res)
+    show_result()
 
-    def do_bw(self):
-        self.image = self.image.convert('L')
-        self.saveImage()
-        image_path = os.path.join(workdir, self.save_dir, self.filename)
-        self.showImage(image_path)
+def check_answer():
+    if answers[0].isChecked():
+        show_correct('Правильно!')
+        window.score += 1
+        print('Статистика\n-Всего вопросов: ', window.total, '\n-Правильных ответов :', window.score)
+        print('Рейтинг: ', (window.score/window.total*100), '%')
+    else:
+        if answers[1].isChecked or answers[2].isChecked or answers[3].isChecked:
+            show_correct('Неверно!')
+            print('Рейтинг: ', (window.score/window.total*100), '%')
 
-    def showImage(self, path):
-        lb_image.hide()
-        pixmapimage = QPixmap(path)
-        w, h = lb_image.width(), lb_image.height()
-        pixmapimage = pixmapimage.scaled(w, h, Qt.KeepAspectRatio)
-        lb_image.setPixmap(pixmapimage)
-        lb_image.show()
 
-    def resetImage(self):
-        if self.original_image is None:
-            return
+def next_question():
+    window.total +=1
+    print('Статистика\n-Всего вопросов: ', window.total, '\n-Правильных ответов: ', window.score)
+    cur_question = randint(0, len(questions_list)-1)
 
-        self.image = self.original_image.copy()
-        self.showImage(os.path.join(workdir, self.filename))
+    q = questions_list[cur_question]
+    ask(q)
 
-    def showChosenImage(self):
-        if lw_files.currentRow() >= 0:
-            filename = lw_files.currentItem().text()
-            workimage.loadImage(filename)
-            workimage.showImage(os.path.join(workdir, workimage.filename))
+def click_OK():
+    if btn_OK.text == 'Ответить':
+        check_answer()
+    else:
+        next_question()
 
-workimage = ImageProcessor()
-lw_files.currentRowChanged.connect(showChosenImage)
+window = QWidget()
+window.setLayout(layout_card)
+window.setWindowTitle('Memory Card')
 
-btn_bw.clicked.connect(workimage.do_bw)
-btn_left.clicked.connect(workimage.do_left)
-btn_right.clicked.connect(workimage.do_right)
-btn_sharp.clicked.connect(workimage.do_sharpen)
-btn_flip.clicked.connect(workimage.do_flip)
-btn_reset.clicked.connect(workimage.resetImage)
+btn_OK.clicked.connect(click_OK)
 
-app.exec_()
+window.score = 0
+window.total = 0
+next_question()
+window.resize(400, 300)
+window.show()
+app.exec()
