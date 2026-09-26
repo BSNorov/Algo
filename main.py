@@ -1,168 +1,110 @@
-import os
-from PyQt5.QtWidgets import (
-    QApplication, QWidget,
-    QFileDialog,  # Диалог открытия файлов (и папок)
-    QLabel, QPushButton, QListWidget,
-    QHBoxLayout, QVBoxLayout
-)
-from PyQt5.QtCore import Qt  # нужна константа Qt.KeepAspectRatio для изменения размеров с сохранением пропорций
-from PyQt5.QtGui import QPixmap  # оптимизированная для показа на экране картинка
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QListWidget, QLineEdit, QTextEdit, QInputDialog, QHBoxLayout, QVBoxLayout, QFormLayout
 
-from PIL import Image
-from PIL import ImageFilter
-from PIL.ImageFilter import SHARPEN
+
+import json
+
 
 app = QApplication([])
-win = QWidget()
-win.resize(700, 500)
-win.setWindowTitle('Easy Editor')
-lb_image = QLabel("Картинка")
-btn_dir = QPushButton("Папка")
-lw_files = QListWidget()
-
-btn_left = QPushButton("Лево")
-btn_right = QPushButton("Право")
-btn_flip = QPushButton("Зеркало")
-btn_sharp = QPushButton("Резкость")
-btn_bw = QPushButton("Ч/Б")
-btn_reset = QPushButton("Сброс фильтров")
-
-row = QHBoxLayout()  # Основная строка
-col1 = QVBoxLayout()  # делится на два столбца
-col2 = QVBoxLayout()
-col1.addWidget(btn_dir)  # в первом - кнопка выбора директории
-col1.addWidget(lw_files)  # и список файлов
-col2.addWidget(lb_image, 95)  # вo втором - картинка
-row_tools = QHBoxLayout()  # и строка кнопок
-row_tools.addWidget(btn_left)
-row_tools.addWidget(btn_right)
-row_tools.addWidget(btn_flip)
-row_tools.addWidget(btn_sharp)
-row_tools.addWidget(btn_bw)
-row_tools.addWidget(btn_reset)
-col2.addLayout(row_tools)
-
-row.addLayout(col1, 20)
-row.addLayout(col2, 80)
-win.setLayout(row)
-
-win.show()
-
-workdir = ''
 
 
-def filter(files, extensions):
-    result = []
-    for filename in files:
-        for ext in extensions:
-            if filename.endswith(ext):
-                result.append(filename)
-    return result
+'''Заметки в json'''
+notes = {
+    "Добро пожаловать!" : {
+        "текст" : "Это самое лучшее приложение для заметок в мире!",
+        "теги" : ["добро", "инструкция"]
+    }
+}
+with open("notes_data.json", "w") as file:
+    json.dump(notes, file)
 
 
-def chooseWorkdir():
-    global workdir
-    workdir = QFileDialog.getExistingDirectory()
 
 
-def showFilenamesList():
-    extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp']
-    chooseWorkdir()
-    filenames = filter(os.listdir(workdir), extensions)
-
-    lw_files.clear()
-    for filename in filenames:
-        lw_files.addItem(filename)
+'''Интерфейс приложения'''
+#параметры окна приложения
+notes_win = QWidget()
+notes_win.setWindowTitle('Умные заметки')
+notes_win.resize(900, 600)
 
 
-btn_dir.clicked.connect(showFilenamesList)
+#виджеты окна приложения
+list_notes = QListWidget()
+list_notes_label = QLabel('Список заметок')
 
 
-class ImageProcessor():
-    def __init__(self):
-        self.image = None
-        self.dir = None
-        self.filename = None
-        self.save_dir = "Modified/"
-        self.original_image = None
-
-    def loadImage(self, filename):
-        ''' при загрузке запоминаем путь и имя файла '''
-        self.filename = filename
-        fullname = os.path.join(workdir, filename)
-        self.image = Image.open(fullname)
-        self.original_image = self.image.copy()
-
-    def saveImage(self):
-        ''' сохраняет копию файла в подпапке '''
-        path = os.path.join(workdir, self.save_dir)
-        if not (os.path.exists(path) or os.path.isdir(path)):
-            os.mkdir(path)
-        fullname = os.path.join(path, self.filename)
-
-        self.image.save(fullname)
-
-    def do_bw(self):
-        self.image = self.image.convert("L")
-        self.saveImage()
-        image_path = os.path.join(workdir, self.save_dir, self.filename)
-        self.showImage(image_path)
-
-    def do_left(self):
-        self.image = self.image.transpose(Image.ROTATE_90)
-        self.saveImage()
-        image_path = os.path.join(workdir, self.save_dir, self.filename)
-        self.showImage(image_path)
-
-    def do_right(self):
-        self.image = self.image.transpose(Image.ROTATE_270)
-        self.saveImage()
-        image_path = os.path.join(workdir, self.save_dir, self.filename)
-        self.showImage(image_path)
-
-    def do_flip(self):
-        self.image = self.image.transpose(Image.FLIP_LEFT_RIGHT)
-        self.saveImage()
-        image_path = os.path.join(workdir, self.save_dir, self.filename)
-        self.showImage(image_path)
-
-    def do_sharpen(self):
-        self.image = self.image.filter(SHARPEN)
-        self.saveImage()
-        image_path = os.path.join(workdir, self.save_dir, self.filename)
-        self.showImage(image_path)
-
-    def showImage(self, path):
-        lb_image.hide()
-        pixmapimage = QPixmap(path)
-        w, h = lb_image.width(), lb_image.height()
-        pixmapimage = pixmapimage.scaled(w, h, Qt.KeepAspectRatio)
-        lb_image.setPixmap(pixmapimage)
-        lb_image.show()
-
-    def resetImage(self):
-        """ Сбрасывает изменения и возвращает оригинальное изображение. """
-        if self.original_image is None:
-            return
-        self.image = self.original_image.copy()
-        self.showImage(os.path.join(workdir, self.filename))
+button_note_create = QPushButton('Создать заметку') #появляется окно с полем "Введите имя заметки"
+button_note_del = QPushButton('Удалить заметку')
+button_note_save = QPushButton('Сохранить заметку')
 
 
-def showChosenImage():
-    if lw_files.currentRow() >= 0:
-        filename = lw_files.currentItem().text()
-        workimage.loadImage(filename)
-        workimage.showImage(os.path.join(workdir, workimage.filename))
+field_tag = QLineEdit('')
+field_tag.setPlaceholderText('Введите тег...')
+field_text = QTextEdit()
+button_tag_add = QPushButton('Добавить к заметке')
+button_tag_del = QPushButton('Открепить от заметки')
+button_tag_search = QPushButton('Искать заметки по тегу')
+list_tags = QListWidget()
+list_tags_label = QLabel('Список тегов')
 
 
-workimage = ImageProcessor()  # текущая рабочая картинка для работы
-lw_files.currentRowChanged.connect(showChosenImage)
+#расположение виджетов по лэйаутам
+layout_notes = QHBoxLayout()
+col_1 = QVBoxLayout()
+col_1.addWidget(field_text)
 
-btn_bw.clicked.connect(workimage.do_bw)
-btn_left.clicked.connect(workimage.do_left)
-btn_right.clicked.connect(workimage.do_right)
-btn_sharp.clicked.connect(workimage.do_sharpen)
-btn_flip.clicked.connect(workimage.do_flip)
-btn_reset.clicked.connect(workimage.resetImage)
 
-app.exec()
+col_2 = QVBoxLayout()
+col_2.addWidget(list_notes_label)
+col_2.addWidget(list_notes)
+row_1 = QHBoxLayout()
+row_1.addWidget(button_note_create)
+row_1.addWidget(button_note_del)
+row_2 = QHBoxLayout()
+row_2.addWidget(button_note_save)
+col_2.addLayout(row_1)
+col_2.addLayout(row_2)
+
+
+col_2.addWidget(list_tags_label)
+col_2.addWidget(list_tags)
+col_2.addWidget(field_tag)
+row_3 = QHBoxLayout()
+row_3.addWidget(button_tag_add)
+row_3.addWidget(button_tag_del)
+row_4 = QHBoxLayout()
+row_4.addWidget(button_tag_search)
+
+
+col_2.addLayout(row_3)
+col_2.addLayout(row_4)
+
+
+layout_notes.addLayout(col_1, stretch = 2)
+layout_notes.addLayout(col_2, stretch = 1)
+notes_win.setLayout(layout_notes)
+
+
+'''Функционал приложения'''
+def show_note():
+    #получаем текст из заметки с выделенным названием и отображаем его в поле редактирования
+    key = list_notes.selectedItems()[0].text()
+    print(key)
+    field_text.setText(notes[key]["текст"])
+    list_tags.clear()
+    list_tags.addItems(notes[key]["теги"])
+
+
+'''Запуск приложения'''
+#подключение обработки событий
+list_notes.itemClicked.connect(show_note)
+
+notes_win.show()
+
+
+with open("notes_data.json", "r") as file:
+    notes = json.load(file)
+list_notes.addItems(notes)
+
+
+app.exec_()
