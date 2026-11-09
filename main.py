@@ -1,115 +1,106 @@
-from turtle import Turtle, Screen
+from turtle import *
 from random import randint
+from time import sleep
+
+width = 200
+height = 250
 
 
+def start(t, y):
+    t.penup()
+    t.goto(-1 * width, y)
+    t.setheading(0)
 
 
-class Sprite(Turtle):
-    '''Класс для создания движущихся объектов (спрайтов) в игре.
-    Наследуется от Turtle.'''
-    def __init__(self, x, y, step=10, shape='circle', color='black'):
-        super().__init__()
-        self.penup()
-        self.speed(0)
-        self.goto(x, y)
-        self.color(color)
-        self.shape(shape)
-        self.step = step  # шаг движения спрайта
-        self.points = 0  # очки спрайта
+def beginstripe(t, x):
+    t.speed(25)
+    start(t, height)
+    t.forward(x)
+    t.left(-90)
+    t.hideturtle()
 
 
-    def move_up(self):
-        '''Двигает спрайт вверх.'''
-        self.goto(self.xcor(), self.ycor() + self.step)
+def stripe(t, x):
+    t.pendown()
+    t.forward(2 * height)
+    t.penup()
+    t.goto(t.xcor() + x, height)
 
 
-    def move_down(self):
-        '''Двигает спрайт вниз.'''
-        self.goto(self.xcor(), self.ycor() - self.step)
+def startrace(t, y):
+    start(t, y)
+    t.shape('turtle')
+    t.showturtle()
+    t.speed(5)
 
 
-    def move_left(self):
-        '''Двигает спрайт влево.'''
-        self.goto(self.xcor() - self.step, self.ycor())
+def dance(t):
+    t.speed(15)
+    t.left(randint(0, 90))
+    j = 0
+    while j < 8:
+        t.penup()
+        t.goto(0, 0)
+        t.pendown()
+        i = 1
+        while i < 32:
+            t.forward(i)
+            t.left(i / 2 + 5)
+            i += 1
+        j += 1
+    t.penup()
+    t.goto(0, 0)
 
 
-    def move_right(self):
-        '''Двигает спрайт вправо.'''
-        self.goto(self.xcor() + self.step, self.ycor())
+# Начало основной программы:
 
 
-    def is_collide(self, sprite):
-        '''Проверяет столкновение с другим спрайтом.'''
-        dist = self.distance(sprite.xcor(), sprite.ycor())
-        return dist < 30
+# Создаём участников гонки:
+t1 = Turtle()
+t2 = Turtle()
+t3 = Turtle()
 
+t1.color('red')
+t2.color('blue')
+t3.color('green')
 
-    def set_move(self, x_start, y_start, x_end, y_end):
-        '''Устанавливает маршрут движения спрайта между двумя точками.'''
-        self.x_start = x_start
-        self.y_start = y_start
-        self.x_end = x_end
-        self.y_end = y_end
-        self.goto(x_start, y_start)
-        self.setheading(self.towards(x_end, y_end))  # определяем направление движения
+# рисуем полосы ширины x:
+x = 20
 
+beginstripe(t1, 0)
+beginstripe(t2, x)
+beginstripe(t3, 2 * x)
 
-    def make_step(self):
-        '''Перемещает спрайт на один шаг в заданном направлении.'''
-        self.forward(self.step)
+while t1.xcor() < width and t2.xcor() < width:
+    stripe(t1, 3 * x)
+    stripe(t2, 3 * x)
+    stripe(t3, 3 * x)
 
+# начало гонки
+startrace(t1, 20)
+startrace(t2, -20)
+startrace(t3, -60)
 
-        if self.distance(self.x_end, self.y_end) < self.step: # если расстояние до конечной точки меньше шага, меняем направление
-            self.set_move(self.x_end, self.y_end, self.x_start, self.y_start)
+sleep(1)
 
+while t1.xcor() < width and t2.xcor() < width and t3.xcor() < width:
+    t1.forward(randint(2, 7))
+    t2.forward(randint(2, 7))
+    t3.forward(randint(2, 7))
+sleep(1)
 
+# подводим итог:
+t1.clear()
+t2.clear()
+t3.clear()
 
+max_x = max(t1.xcor(), t2.xcor(), t3.xcor())
 
-# Создание объектов (игрок, враги, цель)
-player = Sprite(0, -100, 10, 'circle', 'orange')
-enemy1 = Sprite(-200, 0, 15, 'square', 'red')
-enemy1.set_move(-200, 0, 200, 0)
-enemy2 = Sprite(200, 70, 15, 'square', 'red')
-enemy2.set_move(200, 70, -200, 70)
-goal = Sprite(0, 120, 20, 'triangle', 'green')
+if t1.xcor() == max_x:
+    dance(t1)
 
+if t2.xcor() == max_x:
+    dance(t2)
 
-# Очки игрока
-total_score = 0
-
-
-# Настройки экрана
-scr = player.getscreen()
-scr.listen()
-
-
-# Управление игроком
-scr.onkey(player.move_up, 'Up')
-scr.onkey(player.move_left, 'Left')
-scr.onkey(player.move_right, 'Right')
-scr.onkey(player.move_down, 'Down')
-
-
-# Игровой цикл
-while total_score < 3:
-    enemy1.make_step()
-    enemy2.make_step()
-   
-    if player.is_collide(goal):
-        total_score += 1
-        player.goto(0, -100)
-   
-    if player.is_collide(enemy1) or player.is_collide(enemy2):
-        goal.hideturtle()
-        enemy1.hideturtle()
-        enemy2.hideturtle()
-        player.hideturtle()
-        break
-
-
-# Скрываем все спрайты при достижении цели
-if total_score == 3:
-    enemy1.hideturtle()
-    enemy2.hideturtle()
-    player.hideturtle()
-    goal.hideturtle()
+if t3.xcor() == max_x:
+    dance(t3)
