@@ -1,106 +1,72 @@
-from turtle import *
+import pygame
 from random import randint
-from time import sleep
 
-width = 200
-height = 250
+pygame.init()
 
+# создание окна игры
+clock = pygame.time.Clock()
+back = (255, 255, 255)  # цвет фона (background)
+mw = pygame.display.set_mode((500, 500))  # окно программы (main window)
+mw.fill(back)
 
-def start(t, y):
-    t.penup()
-    t.goto(-1 * width, y)
-    t.setheading(0)
-
-
-def beginstripe(t, x):
-    t.speed(25)
-    start(t, height)
-    t.forward(x)
-    t.left(-90)
-    t.hideturtle()
+# цвета
+BLACK = (0, 0, 0)
+LIGHT_BLUE = (200, 200, 255)
 
 
-def stripe(t, x):
-    t.pendown()
-    t.forward(2 * height)
-    t.penup()
-    t.goto(t.xcor() + x, height)
+class TextArea():
+    def __init__(self, x=0, y=0, width=10, height=10, color=(255, 255, 255)):
+        """ область: прямоугольник в нужном месте и нужного цвета """
+        # запоминаем прямоугольник:
+        self.rect = pygame.Rect(x, y, width, height)
+        # цвет заливки - или переданный параметр, или общий цвет фона
+        self.fill_color = color
+
+    # установить текст
+    def set_text(self, text, fsize=12, text_color=BLACK):
+        self.text = text
+        self.image = pygame.font.Font(None, fsize).render(text, True, text_color)
+
+    # отрисовка прямоугольника с текстом
+    def draw(self, shift_x=0, shift_y=0):
+        pygame.draw.rect(mw, self.fill_color, self.rect)
+        mw.blit(self.image, (self.rect.x + shift_x, self.rect.y + shift_y))
 
 
-def startrace(t, y):
-    start(t, y)
-    t.shape('turtle')
-    t.showturtle()
-    t.speed(5)
+# создание карточек
+quest_card = TextArea(120, 100, 290, 70, LIGHT_BLUE)
+quest_card.set_text("Вопрос", 75)
 
+ans_card = TextArea(120, 240, 290, 70, LIGHT_BLUE)
+ans_card.set_text("Ответ", 75)
 
-def dance(t):
-    t.speed(15)
-    t.left(randint(0, 90))
-    j = 0
-    while j < 8:
-        t.penup()
-        t.goto(0, 0)
-        t.pendown()
-        i = 1
-        while i < 32:
-            t.forward(i)
-            t.left(i / 2 + 5)
-            i += 1
-        j += 1
-    t.penup()
-    t.goto(0, 0)
+quest_card.draw(10, 10)
+ans_card.draw(10, 10)
 
+while 1:
+    pygame.display.update()
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN:
 
-# Начало основной программы:
+            if event.key == pygame.K_q:
+                num = randint(1, 3)
+                if num == 1:
+                    quest_card.set_text('Что изучаешь в Алгоритмике?', 25)
+                if num == 2:
+                    quest_card.set_text('На каком языке говорят во Франции?', 25)
+                if num == 3:
+                    quest_card.set_text('Что растёт на яблоне?', 35)
 
+                quest_card.draw(10, 25)
 
-# Создаём участников гонки:
-t1 = Turtle()
-t2 = Turtle()
-t3 = Turtle()
+            if event.key == pygame.K_a:
+                num = randint(1, 3)
+                if num == 1:
+                    ans_card.set_text('Python', 35)
+                if num == 2:
+                    ans_card.set_text('Французский', 35)
+                if num == 3:
+                    ans_card.set_text('Яблоки', 35)
 
-t1.color('red')
-t2.color('blue')
-t3.color('green')
-
-# рисуем полосы ширины x:
-x = 20
-
-beginstripe(t1, 0)
-beginstripe(t2, x)
-beginstripe(t3, 2 * x)
-
-while t1.xcor() < width and t2.xcor() < width:
-    stripe(t1, 3 * x)
-    stripe(t2, 3 * x)
-    stripe(t3, 3 * x)
-
-# начало гонки
-startrace(t1, 20)
-startrace(t2, -20)
-startrace(t3, -60)
-
-sleep(1)
-
-while t1.xcor() < width and t2.xcor() < width and t3.xcor() < width:
-    t1.forward(randint(2, 7))
-    t2.forward(randint(2, 7))
-    t3.forward(randint(2, 7))
-sleep(1)
-
-# подводим итог:
-t1.clear()
-t2.clear()
-t3.clear()
-
-max_x = max(t1.xcor(), t2.xcor(), t3.xcor())
-
-if t1.xcor() == max_x:
-    dance(t1)
-
-if t2.xcor() == max_x:
-    dance(t2)
-
-if t3.xcor() == max_x:
-    dance(t3)
+                ans_card.draw(10, 25)
+    clock.tick(40)
